@@ -13,8 +13,11 @@ export function Catalog() {
 
   async function handleAdd(id: number) {
     setAdding(id);
-    await addToWatchlist(id);
-    setAdding(null);
+    try {
+      await addToWatchlist(id);
+    } finally {
+      setAdding(null);
+    }
   }
 
   const filtered = titles.filter((t) =>
