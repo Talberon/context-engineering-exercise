@@ -93,16 +93,21 @@ def mark_watched(watchlist_id: int, body: WatchUpdate):
 
 @app.get("/api/watchlist/search")
 def search_watchlist(q: str = ""):
+    if not q.strip():
+        return []
     conn = get_conn()
-    pattern = f"%{q}%"
+    # Escape LIKE special characters to avoid wildcard injection
+    escaped = q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+    pattern = f"%{escaped}%"
     rows = conn.execute(
         """
         SELECT w.id as watchlist_id, w.is_watched, w.added_at, w.watched_at,
                t.id as title_id, t.title, t.kind, t.release_year, t.genre
         FROM watchlist w
         JOIN titles t ON t.id = w.title_id
-        WHERE t.title LIKE ? COLLATE NOCASE
+        WHERE t.title LIKE ? ESCAPE '\\' COLLATE NOCASE
         ORDER BY w.id
+        LIMIT 100
         """,
         (pattern,),
     ).fetchall()

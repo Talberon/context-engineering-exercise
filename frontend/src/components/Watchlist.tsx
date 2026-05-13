@@ -11,6 +11,7 @@ export function Watchlist() {
   const [searchResults, setSearchResults] = useState<WatchlistItem[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchVersionRef = useRef(0);
   const size = 5;
 
   async function load() {
@@ -32,10 +33,22 @@ export function Watchlist() {
       return;
     }
     setIsSearching(true);
+    const version = ++searchVersionRef.current;
     debounceRef.current = setTimeout(async () => {
-      const results = await searchWatchlist(trimmed);
-      setSearchResults(results);
-      setIsSearching(false);
+      try {
+        const results = await searchWatchlist(trimmed);
+        if (version === searchVersionRef.current) {
+          setSearchResults(results);
+        }
+      } catch {
+        if (version === searchVersionRef.current) {
+          setSearchResults([]);
+        }
+      } finally {
+        if (version === searchVersionRef.current) {
+          setIsSearching(false);
+        }
+      }
     }, 250);
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
