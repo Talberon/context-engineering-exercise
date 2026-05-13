@@ -32,3 +32,9 @@ button.secondary {
 .pagination { display: flex; gap: 8px; justify-content: center; margin-top: 20px; align-items: center; }
 .empty { color: #777; text-align: center; padding: 40px 0; }
 .watched { opacity: 0.55; }
+.search-input {
+  width: 100%; padding: 8px 12px; margin-bottom: 16px;
+  background: #1a1a1d; color: #e8e8ea; border: 1px solid #2a2a2e;
+  border-radius: 6px; font-size: 14px; outline: none;
+}
+.search-input:focus { border-color: #e50914; }
