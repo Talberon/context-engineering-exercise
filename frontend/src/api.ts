@@ -51,6 +51,11 @@ export async function markWatched(watchlistId: number, isWatched: boolean): Prom
   });
 }
 
+export async function searchWatchlist(q: string): Promise<WatchlistItem[]> {
+  const res = await fetch(`/api/watchlist/search?q=${encodeURIComponent(q)}`);
+  return res.json();
+}
+
 export async function fetchRecent(): Promise<WatchlistItem[]> {
   const res = await fetch("/api/watchlist/recent");
   return res.json();

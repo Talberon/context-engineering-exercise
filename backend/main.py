@@ -91,6 +91,25 @@ def mark_watched(watchlist_id: int, body: WatchUpdate):
     return {"ok": True}
 
 
+@app.get("/api/watchlist/search")
+def search_watchlist(q: str = ""):
+    conn = get_conn()
+    pattern = f"%{q}%"
+    rows = conn.execute(
+        """
+        SELECT w.id as watchlist_id, w.is_watched, w.added_at, w.watched_at,
+               t.id as title_id, t.title, t.kind, t.release_year, t.genre
+        FROM watchlist w
+        JOIN titles t ON t.id = w.title_id
+        WHERE t.title LIKE ? COLLATE NOCASE
+        ORDER BY w.id
+        """,
+        (pattern,),
+    ).fetchall()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
 @app.get("/api/watchlist/recent")
 def get_recent():
     """Items watched today."""

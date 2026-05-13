@@ -32,3 +32,10 @@ button.secondary {
 .pagination { display: flex; gap: 8px; justify-content: center; margin-top: 20px; align-items: center; }
 .empty { color: #777; text-align: center; padding: 40px 0; }
 .watched { opacity: 0.55; }
+.search-bar { margin-bottom: 16px; }
+.search-input {
+  width: 100%; padding: 8px 12px; background: #1a1a1d; color: #e8e8ea;
+  border: 1px solid #3a3a3e; border-radius: 6px; font-size: 14px; outline: none;
+}
+.search-input::placeholder { color: #666; }
+.search-input:focus { border-color: #e50914; }

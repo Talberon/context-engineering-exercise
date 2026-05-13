@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { fetchWatchlist, markWatched, type WatchlistItem } from "../api";
+import { useEffect, useRef, useState } from "react";
+import { fetchWatchlist, markWatched, searchWatchlist, type WatchlistItem } from "../api";
 import { TitleCard } from "./TitleCard";
 
 export function Watchlist() {
@@ -7,6 +7,10 @@ export function Watchlist() {
   const [items, setItems] = useState<WatchlistItem[]>([]);
   const [total, setTotal] = useState(0);
   const [filter, setFilter] = useState<"all" | "unwatched" | "watched">("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<WatchlistItem[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const size = 5;
 
   async function load() {
@@ -19,12 +23,39 @@ export function Watchlist() {
     load();
   }, [page]);
 
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    const trimmed = searchQuery.trim();
+    if (!trimmed) {
+      setSearchResults([]);
+      setIsSearching(false);
+      return;
+    }
+    setIsSearching(true);
+    debounceRef.current = setTimeout(async () => {
+      const results = await searchWatchlist(trimmed);
+      setSearchResults(results);
+      setIsSearching(false);
+    }, 250);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [searchQuery]);
+
   async function toggle(item: WatchlistItem) {
     await markWatched(item.watchlist_id, !item.is_watched);
-    load();
+    if (searchQuery.trim()) {
+      const results = await searchWatchlist(searchQuery.trim());
+      setSearchResults(results);
+    } else {
+      load();
+    }
   }
 
-  const visible = items.filter((i) => {
+  const isInSearchMode = searchQuery.trim().length > 0;
+
+  const baseItems = isInSearchMode ? searchResults : items;
+  const visible = baseItems.filter((i) => {
     if (filter === "watched") return i.is_watched === true;
     if (filter === "unwatched") return i.is_watched === false;
     return true;
@@ -34,6 +65,17 @@ export function Watchlist() {
 
   return (
     <>
+      <div className="search-bar">
+        <input
+          type="search"
+          className="search-input"
+          placeholder="Search watchlist by title…"
+          aria-label="Search watchlist by title"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+      </div>
+
       <div className="tabs" style={{ marginBottom: 14 }}>
         <button className={filter === "all" ? "active" : ""} onClick={() => setFilter("all")}>
           All
@@ -46,8 +88,12 @@ export function Watchlist() {
         </button>
       </div>
 
-      {visible.length === 0 ? (
-        <div className="empty">Nothing here.</div>
+      {isSearching ? (
+        <div className="empty">Searching…</div>
+      ) : visible.length === 0 ? (
+        <div className="empty">
+          {isInSearchMode ? `No results for "${searchQuery}".` : "Nothing here."}
+        </div>
       ) : (
         <div className="grid">
           {visible.map((item) => (
@@ -65,25 +111,27 @@ export function Watchlist() {
         </div>
       )}
 
-      <div className="pagination">
-        <button
-          className="secondary"
-          disabled={page <= 1}
-          onClick={() => setPage((p) => p - 1)}
-        >
-          ← Prev
-        </button>
-        <span className="meta">
-          Page {page} of {totalPages}
-        </span>
-        <button
-          className="secondary"
-          disabled={page >= totalPages}
-          onClick={() => setPage((p) => p + 1)}
-        >
-          Next →
-        </button>
-      </div>
+      {!isInSearchMode && (
+        <div className="pagination">
+          <button
+            className="secondary"
+            disabled={page <= 1}
+            onClick={() => setPage((p) => p - 1)}
+          >
+            ← Prev
+          </button>
+          <span className="meta">
+            Page {page} of {totalPages}
+          </span>
+          <button
+            className="secondary"
+            disabled={page >= totalPages}
+            onClick={() => setPage((p) => p + 1)}
+          >
+            Next →
+          </button>
+        </div>
+      )}
     </>
   );
 }
